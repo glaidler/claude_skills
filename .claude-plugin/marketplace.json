@@ -1,0 +1,22 @@
+{
+  "name": "anthropic-agent-skills",
+  "owner": {
+    "name": "Keith Lazuka",
+    "email": "klazuka@anthropic.com"
+  },
+  "metadata": {
+    "description": "Anthropic example skills",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "jira-claude-bitbucket-skills",
+      "description": "Collection of skills facilitating interaction between claude, jira and bitbucket.",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/plan-jira"
+      ]
+    }
+  ]
+}
