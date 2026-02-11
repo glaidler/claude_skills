@@ -1,21 +1,23 @@
 {
-  "name": "anthropic-agent-skills",
+  "name": "jira-plan-skills",
   "owner": {
-    "name": "Keith Lazuka",
-    "email": "klazuka@anthropic.com"
+    "name": "glaidler"
   },
   "metadata": {
-    "description": "Anthropic example skills",
+    "description": "Plan-first Jira workflow for Claude Code",
     "version": "1.0.0"
   },
   "plugins": [
     {
-      "name": "jira-claude-bitbucket-skills",
-      "description": "Collection of skills facilitating interaction between claude, jira and bitbucket.",
+      "name": "jira-plan",
+      "description": "Bridge Jira tickets to implementation via plan-first PR workflow. Creates a plan PR for review before writing any code.",
       "source": "./",
       "strict": false,
       "skills": [
         "./skills/plan-jira"
+      ],
+      "commands": [
+        "./commands/jira-plan.md"
       ]
     }
   ]
