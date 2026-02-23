@@ -1,0 +1,20 @@
+{
+  "name": "jira-plan-skills",
+  "version": "1.0.0",
+  "description": "Plan-first Jira workflow for Claude Code. Bridge Jira tickets to implementation via plan-first PR workflow.",
+  "author": "glaidler",
+  "skills": [
+    {
+      "name": "plan-jira",
+      "description": "Plan-first workflow: create a plan PR from a Jira ticket, iterate on feedback, then implement.",
+      "path": "skills/plan-jira"
+    }
+  ],
+  "commands": [
+    {
+      "name": "jira-plan",
+      "description": "Plan and implement Jira tickets via plan-first PR workflow",
+      "path": "commands/jira-plan.md"
+    }
+  ]
+}
