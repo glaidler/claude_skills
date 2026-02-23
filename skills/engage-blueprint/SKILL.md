@@ -1,5 +1,5 @@
 ---
-name: "plan-jira"
+name: "engage-blueprint"
 description: "Plan-first workflow: create a plan PR from a Jira ticket, iterate on feedback, then implement."
 ---
 
@@ -139,7 +139,7 @@ This PR contains the implementation plan for [<JIRA_KEY>](<jira-url>).
 3. Approve when the plan looks good
 
 ### Next steps
-Once approved, run `/jira-plan <JIRA_KEY> implement` to execute the plan.
+Once approved, run `/engage-blueprint <JIRA_KEY> implement` to execute the plan.
 
 ---
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
@@ -153,7 +153,7 @@ EOF
 Tell the user:
 - The plan PR URL
 - The implementation branch name
-- How to proceed: review the PR, leave comments, then run `/jira-plan <JIRA_KEY>` to iterate or `/jira-plan <JIRA_KEY> implement` to implement
+- How to proceed: review the PR, leave comments, then run `/engage-blueprint <JIRA_KEY>` to iterate or `/engage-blueprint <JIRA_KEY> implement` to implement
 
 ---
 
@@ -218,7 +218,7 @@ git push origin <plan-branch>
 Tell the user:
 - What changes were made to the plan
 - The PR URL for continued review
-- Remind them to run `/jira-plan <JIRA_KEY> implement` when the plan is approved
+- Remind them to run `/engage-blueprint <JIRA_KEY> implement` when the plan is approved
 
 ---
 

@@ -1,20 +1,20 @@
 {
-  "name": "jira-plan-skills",
+  "name": "clira",
   "version": "1.0.0",
-  "description": "Plan-first Jira workflow for Claude Code. Bridge Jira tickets to implementation via plan-first PR workflow.",
+  "description": "Clira — Plan-first Jira workflow for Claude Code. Bridge Jira tickets to implementation via plan-first PR workflow.",
   "author": "glaidler",
   "skills": [
     {
-      "name": "plan-jira",
+      "name": "engage-blueprint",
       "description": "Plan-first workflow: create a plan PR from a Jira ticket, iterate on feedback, then implement.",
-      "path": "skills/plan-jira"
+      "path": "skills/engage-blueprint"
     }
   ],
   "commands": [
     {
-      "name": "jira-plan",
+      "name": "engage-blueprint",
       "description": "Plan and implement Jira tickets via plan-first PR workflow",
-      "path": "commands/jira-plan.md"
+      "path": "commands/engage-blueprint.md"
     }
   ]
 }

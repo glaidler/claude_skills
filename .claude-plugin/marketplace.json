@@ -1,23 +1,23 @@
 {
-  "name": "jira-plan-skills",
+  "name": "clira",
   "owner": {
     "name": "glaidler"
   },
   "metadata": {
-    "description": "Plan-first Jira workflow for Claude Code",
+    "description": "Clira — Plan-first Jira workflow for Claude Code",
     "version": "1.0.0"
   },
   "plugins": [
     {
-      "name": "jira-plan",
+      "name": "engage-blueprint",
       "description": "Bridge Jira tickets to implementation via plan-first PR workflow. Creates a plan PR for review before writing any code.",
       "source": "./",
       "strict": false,
       "skills": [
-        "./skills/plan-jira"
+        "./skills/engage-blueprint"
       ],
       "commands": [
-        "./commands/jira-plan.md"
+        "./commands/engage-blueprint.md"
       ]
     }
   ]

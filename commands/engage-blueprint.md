@@ -3,9 +3,9 @@ description: "Plan and implement Jira tickets via plan-first PR workflow"
 allowed-tools: "Bash, Read, Write, Edit, Glob, Grep, WebFetch, mcp__claude_ai_Atlassian__getAccessibleAtlassianResources, mcp__claude_ai_Atlassian__getJiraIssue, mcp__claude_ai_Atlassian__searchJiraIssuesUsingJql"
 ---
 
-# /jira-plan
+# /engage-blueprint
 
-You are executing the `jira-plan` skill. This command bridges Jira tickets to implementation via a plan-first PR workflow.
+You are executing the `engage-blueprint` skill. This command bridges Jira tickets to implementation via a plan-first PR workflow.
 
 ## Gather Context
 
@@ -27,4 +27,4 @@ First, collect the current state:
    - If **plan branch exists** and `implement` arg was **NOT** passed → proceed with **Phase 2: Review & Adjust**
    - If **plan branch exists** and `implement` arg **WAS** passed → proceed with **Phase 3: Implement**
 
-Now load and follow the full instructions in `skills/plan-jira/SKILL.md` for the detected phase.
+Now load and follow the full instructions in `skills/engage-blueprint/SKILL.md` for the detected phase.
