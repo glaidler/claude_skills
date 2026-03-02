@@ -45,45 +45,7 @@ When the Jira ticket is in an early-stage status (To Do, Open, Backlog, or simil
 
 Tell the user: "I've loaded the details for <JIRA_KEY>: <Title>. Let me explore the codebase and create a plan."
 
-### Step 2 — Determine Starting Point
-
-The work will be based on the `main` branch by default.
-
-- If the user is already on `main`, proceed automatically. Tell them: "I'll base this work on the main codebase."
-- If the user is on a different branch, tell them: "You're currently working from a place called `<branch-name>`. Normally I start from the main codebase. Should I use **main** (recommended), or start from where you are now?" Wait for the user to choose.
-
-Do NOT use terms like "base branch" — say "starting point" if needed.
-
-### Step 3 — Set Up Working Area
-
-Create the branch needed for implementation. The user does not need to understand branches — communicate as "setting up a working area for this ticket." Execute git commands silently and only surface errors in friendly language.
-
-1. Fetch and checkout the starting point:
-   ```
-   git fetch origin
-   git checkout <starting-branch>
-   git pull origin <starting-branch>
-   ```
-
-2. Slugify the Jira title: lowercase, replace non-alphanumeric characters with hyphens, collapse multiple hyphens, trim leading/trailing hyphens, truncate to keep the total branch name under 60 chars.
-   - Example: "Fix Login Timeout on Mobile" → `fix-login-timeout-on-mobile`
-
-3. Create the implementation branch:
-   ```
-   git checkout -b <JIRA_KEY>-<slugified-title>
-   ```
-
-4. Push the implementation branch so it exists on remote:
-   ```
-   git push -u origin <implementation-branch>
-   ```
-
-> **Error translation guide** — if any git command fails, do NOT show the raw error. Translate it:
-> - "fatal: A branch named 'X' already exists" → "It looks like work on this ticket was already started. Let me check the current state."
-> - "error: failed to push" → "I wasn't able to upload the working area. This might be a permissions issue — please check with your team."
-> - Any other error → "Something went wrong while setting up. Here's a summary: [one-sentence plain description]. You may want to ask a developer for help."
-
-### Step 4 — Explore the Codebase
+### Step 2 — Explore the Codebase
 
 Before writing the plan, understand the codebase:
 
@@ -94,7 +56,7 @@ Before writing the plan, understand the codebase:
 
 Spend adequate time here — the quality of the plan depends on understanding the code.
 
-### Step 5 — Write the Plan
+### Step 3 — Write the Plan
 
 Create the plan file at `.claude/plans/<JIRA_KEY>.md` using this template. The template has two distinct halves: a **business summary** at the top for stakeholders and reviewers (written in plain, non-technical language), and a **technical plan** below the divider for developers.
 
@@ -166,19 +128,11 @@ Create the plan file at `.claude/plans/<JIRA_KEY>.md` using this template. The t
 
 Fill in every section thoroughly. The business summary sections should be understandable by anyone on the team. The technical sections should be detailed enough that a developer could implement the plan without additional context.
 
-### Step 6 — Save the Plan Locally
+### Step 4 — Save the Plan Locally
 
-Save the plan file silently:
+Save the plan file to `.claude/plans/<JIRA_KEY>.md`. No git operations are needed at this stage — the plan is saved locally and will be published to Confluence in the next step.
 
-```
-git add .claude/plans/<JIRA_KEY>.md
-git commit -m "plan: <JIRA_KEY> - <Jira Title>"
-git push origin <implementation-branch>
-```
-
-Do not mention commits or pushes to the user.
-
-### Step 7 — Publish Plan to Confluence
+### Step 5 — Publish Plan to Confluence
 
 1. **Determine the Confluence space**:
    - Check if a space preference has been stored previously in `.claude/plans/.confluence-config.json`
@@ -216,14 +170,14 @@ Do not mention commits or pushes to the user.
 
    - This lets stakeholders review and respond directly in Jira without needing to visit Confluence. The Confluence link is still included for anyone who wants the full technical detail.
 
-### Step 8 — Transition the Jira Ticket
+### Step 6 — Transition the Jira Ticket
 
 1. Call `getTransitionsForJiraIssue` to get available transitions
 2. Look for a transition that moves the ticket to a review-like status (e.g., "In Review", "Planning", "In Progress")
 3. If a suitable transition is found, call `transitionJiraIssue` to move the ticket
 4. If no obvious transition exists, tell the user: "I've published the plan but I'm not sure which status to move the ticket to. Could you update the ticket status in Jira to indicate it's ready for review?"
 
-### Step 9 — Tell the User What Happened
+### Step 7 — Tell the User What Happened
 
 Tell the user in friendly language:
 
@@ -235,14 +189,6 @@ Tell the user in friendly language:
   3. "Once you're happy with the plan, move the Jira ticket to an approved status (like 'Ready for Dev' or 'Approved')"
   4. "Then come back and run `/engage-blueprint <JIRA_KEY> implement` to start building"
 - "If you get feedback and want me to update the plan, just run `/engage-blueprint <JIRA_KEY>` again and I'll pick up the comments."
-
-### Step 10 — Restore Saved Work
-
-If the user's work was saved aside at the start (via git stash), restore it now:
-```
-git stash list | grep "engage-blueprint: saved before <JIRA_KEY>"
-```
-If found, run `git stash pop` and tell the user: "I've restored the work you had in progress before we started."
 
 ---
 
@@ -267,57 +213,29 @@ Gather feedback from both Jira and Confluence:
 
 Combine feedback from both sources. If the same question was answered in both places, prefer the most recent response.
 
-### Step 3 — Load the Latest Plan
+### Step 3 — Update the Plan
 
-Silently ensure you have the latest version:
-
-```
-git fetch origin
-git checkout <implementation-branch>
-git pull origin <implementation-branch>
-```
-
-Tell the user: "I'm loading the latest version of your plan." Do not mention git operations.
-
-### Step 4 — Update the Plan
-
-1. Read the current plan from `.claude/plans/<JIRA_KEY>.md`
+1. Read the current plan from `.claude/plans/<JIRA_KEY>.md` (or fetch from Confluence if the local file is missing)
 2. Analyze the feedback:
    - Summarize each piece of feedback for the user in plain language
    - Suggest changes to address each comment
 3. Ask the user if the proposed changes look good
 4. Update `.claude/plans/<JIRA_KEY>.md` with the changes
 
-### Step 5 — Save and Upload Updates
+### Step 4 — Save and Upload Updates
 
-Save changes silently:
-
-```
-git add .claude/plans/<JIRA_KEY>.md
-git commit -m "plan: update <JIRA_KEY> based on review feedback"
-git push origin <implementation-branch>
-```
-
-Then update the Confluence page:
+Save the updated plan to `.claude/plans/<JIRA_KEY>.md` locally, then update Confluence:
 - Call `updateConfluencePage` with the page ID and the updated plan content
 
 Optionally reply to specific comments on the Confluence page using `createConfluenceFooterComment` to acknowledge feedback was addressed.
 
-### Step 6 — Tell the User
+### Step 5 — Tell the User
 
 Tell the user:
 - "I've updated your plan based on the review feedback."
 - Summarize the changes in bullet points
 - Provide the Confluence page link: "You can see the updated plan here: [link]"
 - "Once the reviewer is happy and moves the ticket to an approved status, run `/engage-blueprint <JIRA_KEY> implement` to start building."
-
-### Step 7 — Restore Saved Work
-
-If the user's work was saved aside at the start (via git stash), restore it now:
-```
-git stash list | grep "engage-blueprint: saved before <JIRA_KEY>"
-```
-If found, run `git stash pop` and tell the user: "I've restored the work you had in progress before we started."
 
 ---
 
@@ -340,21 +258,34 @@ This is a hard gate. Under no circumstances should implementation proceed withou
 
 Tell the user: "The plan is approved! I'm setting things up to start building."
 
-Silently switch to the implementation branch:
-```
-git fetch origin
-git checkout <implementation-branch>
-git pull origin <implementation-branch>
-```
+1. **Check for unsaved work** (silently):
+   - Run `git status --porcelain`
+   - If there are uncommitted changes, tell the user: "You have unsaved work in this folder. I need a clean starting point before I can build. Should I **save your current work aside** (I'll restore it when we're done), or would you rather **stop here** so you can handle it yourself?"
+     - If save aside: run `git stash push -m "engage-blueprint: saved before <JIRA_KEY>"`
+     - If stop: end the command with a friendly message
 
-If the implementation branch doesn't exist, create it from the starting point (default `main`):
-```
-git fetch origin
-git checkout main
-git pull origin main
-git checkout -b <JIRA_KEY>-<slugified-title>
-git push -u origin <implementation-branch>
-```
+2. **Create the implementation branch** (silently):
+   - Slugify the Jira title: lowercase, replace non-alphanumeric characters with hyphens, collapse multiple hyphens, trim leading/trailing hyphens, truncate to keep the total branch name under 60 chars.
+     - Example: "Fix Login Timeout on Mobile" → `fix-login-timeout-on-mobile`
+   - Create and push the branch:
+     ```
+     git fetch origin
+     git checkout main
+     git pull origin main
+     git checkout -b <JIRA_KEY>-<slugified-title>
+     git push -u origin <implementation-branch>
+     ```
+   - If the branch already exists, just switch to it:
+     ```
+     git fetch origin
+     git checkout <implementation-branch>
+     git pull origin <implementation-branch>
+     ```
+
+> **Error translation guide** — if any git command fails, do NOT show the raw error. Translate it:
+> - "fatal: A branch named 'X' already exists" → "It looks like work on this ticket was already started. Let me pick up where we left off."
+> - "error: failed to push" → "I wasn't able to upload the working area. This might be a permissions issue — please check with your team."
+> - Any other error → "Something went wrong while setting up. Here's a summary: [one-sentence plain description]. You may want to ask a developer for help."
 
 ### Step 3 — Read the Plan
 

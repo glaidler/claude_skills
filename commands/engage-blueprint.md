@@ -25,14 +25,7 @@ Only proceed if this check passes.
    - Check if `implement` was passed as a second argument
    - If no Jira key is provided, ask the user for one and stop
 
-2. Get current git state (silently):
-   - Current branch: run `git branch --show-current`
-   - Git status: run `git status --porcelain`
-   - If there are uncommitted changes, tell the user: "You have unsaved work in this folder. I need a clean starting point before I can continue. Should I **save your current work aside** (I'll restore it when we're done), or would you rather **stop here** so you can handle it yourself?"
-     - If save aside: run `git stash push -m "engage-blueprint: saved before <JIRA_KEY>"`
-     - If stop: end the command with a friendly message
-
-3. Detect the current phase using the Jira ticket status:
+2. Detect the current phase using the Jira ticket status:
    - Fetch the Jira issue using `getJiraIssue` and read its current status
    - Map the status to a phase:
      - **Status is "To Do", "Open", "Backlog", or similar early-stage status** → proceed with **Phase 1: Plan Creation**
