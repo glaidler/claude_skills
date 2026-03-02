@@ -11,6 +11,20 @@ This skill implements a three-phase workflow that bridges Jira tickets to code. 
 
 ---
 
+## Pre-Phase Check — Verify Git
+
+Before starting any phase, silently verify that Git is available. If any check fails, stop immediately with a clear, non-technical message.
+
+1. **Git** — Run `git --version`
+   - On failure: "It looks like Git isn't installed on this machine. Please ask your team's developer to set it up."
+
+2. **Git repository** — Run `git rev-parse --is-inside-work-tree`
+   - On failure: "This folder isn't set up as a code project. Please make sure you're in the right folder before running this command."
+
+Only proceed if both checks pass.
+
+---
+
 ## Phase 1: Plan Creation
 
 When the Jira ticket is in an early-stage status (To Do, Open, Backlog, or similar).
@@ -326,7 +340,11 @@ After implementation is complete:
 1. Run the full test suite if one exists. Tell the user: "I'm running tests to make sure everything works."
 2. Show the user a plain-language summary of what was built, organized by what changed from the user's perspective (not file-by-file).
 3. Ask: "Would you like me to submit this for code review?"
-4. If yes, create the PR:
+4. If yes, first verify the GitHub CLI is available:
+   - Run `gh --version`. On failure: "The GitHub command-line tool isn't installed. I've finished building everything, but I can't submit it for review automatically. Please ask your team's developer to install it from https://cli.github.com/ and then run this command again."
+   - Run `gh auth status`. On failure: "The GitHub tool is installed but not signed in. Please ask your team's developer to run `gh auth login` in a terminal, and then run this command again."
+   - If either check fails, stop here — do NOT attempt to create the PR.
+5. Create the PR:
    ```
    gh pr create \
      --base <starting-branch> \
@@ -355,7 +373,7 @@ After implementation is complete:
    ```
    Tell the user: "Done! Your code has been submitted for review: [PR URL]"
 
-5. Update the Jira ticket:
+6. Update the Jira ticket:
    - Call `addCommentToJiraIssue` to post: "Implementation complete. Code review: [PR URL]"
    - Optionally call `transitionJiraIssue` to move the ticket to an "In Code Review" or "In Progress" status if available
 

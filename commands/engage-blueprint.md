@@ -13,21 +13,10 @@ You are executing the `engage-blueprint` skill. This command bridges Jira ticket
 
 Before doing anything else, silently verify that the required tools are available. If any check fails, stop immediately with a clear, non-technical message.
 
-1. **Git** — Run `git --version`
-   - On failure: "It looks like Git isn't installed on this machine. Please ask your team's developer to set it up."
-
-2. **GitHub CLI** — Run `gh --version`
-   - On failure: "The GitHub command-line tool isn't installed. Please ask your team's developer to install it from https://cli.github.com/."
-   - Then run `gh auth status` to check authentication.
-   - On auth failure: "The GitHub tool is installed but not signed in. Please ask your team's developer to run `gh auth login` in a terminal."
-
-3. **Git repository** — Run `git rev-parse --is-inside-work-tree`
-   - On failure: "This folder isn't set up as a code project. Please make sure you're in the right folder before running this command."
-
-4. **Atlassian connection** — Call `getAccessibleAtlassianResources`
+1. **Atlassian connection** — Call `getAccessibleAtlassianResources`
    - On any failure: "I can't connect to Jira and Confluence. The Atlassian integration may not be set up yet. Please check that the Atlassian MCP server is configured in your Claude Code settings."
 
-Only proceed if all four checks pass.
+Only proceed if this check passes.
 
 ## Gather Context
 
