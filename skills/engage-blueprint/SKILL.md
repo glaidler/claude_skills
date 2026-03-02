@@ -96,10 +96,40 @@ Spend adequate time here — the quality of the plan depends on understanding th
 
 ### Step 5 — Write the Plan
 
-Create the plan file at `.claude/plans/<JIRA_KEY>.md` using this template:
+Create the plan file at `.claude/plans/<JIRA_KEY>.md` using this template. The template has two distinct halves: a **business summary** at the top for stakeholders and reviewers (written in plain, non-technical language), and a **technical plan** below the divider for developers.
 
 ```markdown
 # <JIRA_KEY>: <Jira Title>
+
+## Summary
+
+<2-3 sentence plain-language explanation of what this change does and why it's needed. No technical jargon. Write this for someone who uses the product but doesn't read code.>
+
+## What Changes for Users
+
+- <Visible change 1 — describe from the end-user's perspective>
+- <Visible change 2>
+- <If there are no user-visible changes, say "This is an under-the-hood improvement. Users won't see any difference, but it [improves performance / fixes a rare issue / etc.].">
+
+## Decisions Needed
+
+> **Reviewers**: please leave comments on this page if you have thoughts on any of these, or if anything in the summary above is unclear.
+
+- <Question or decision 1 that needs stakeholder input>
+- <Question or decision 2>
+- <If no decisions are needed, replace this list with "No open questions — this one is straightforward.">
+
+## Risks & Impact
+
+- <Plain-language risk 1, e.g. "Users will be logged out when we deploy this">
+- <Plain-language risk 2, e.g. "This changes how notifications work, so we should let the support team know">
+- <If low risk, say "Low risk — this change is isolated and doesn't affect other parts of the product.">
+
+---
+
+*Everything below this line is technical detail for developers.*
+
+---
 
 ## Jira Details
 - **Type:** <issue type>
@@ -128,13 +158,13 @@ Create the plan file at `.claude/plans/<JIRA_KEY>.md` using this template:
 - <How to verify the changes work>
 - <Specific test cases to add or modify>
 
-## Risks & Considerations
+## Technical Risks
 - <Edge cases>
 - <Potential breaking changes>
 - <Dependencies or coordination needed>
 ```
 
-Fill in every section thoroughly. The plan should be detailed enough that someone could implement it without additional context.
+Fill in every section thoroughly. The business summary sections should be understandable by anyone on the team. The technical sections should be detailed enough that a developer could implement the plan without additional context.
 
 ### Step 6 — Save the Plan Locally
 
@@ -163,9 +193,28 @@ Do not mention commits or pushes to the user.
      - Body: the contents of the plan file (converted to Confluence-compatible format)
    - Store the page ID in `.claude/plans/.confluence-config.json` under a key for this Jira issue, e.g., `{"spaceKey": "<KEY>", "pages": {"<JIRA_KEY>": "<PAGE_ID>"}}`
 
-3. **Link the plan on the Jira ticket**:
-   - Call `addCommentToJiraIssue` to post a comment on the ticket:
-     > "A plan has been created for this ticket. Please review it here: [Plan: <JIRA_KEY> - <Jira Title>](<confluence-page-url>)"
+3. **Post the plan summary and questions on the Jira ticket**:
+   - Call `addCommentToJiraIssue` to post a comment that includes the business-facing sections from the plan. Use this format:
+
+     > ## Plan ready for review
+     >
+     > **Summary:** <Summary section from the plan>
+     >
+     > **What changes for users:**
+     > - <bullet points from the "What Changes for Users" section>
+     >
+     > **Risks & impact:**
+     > - <bullet points from the "Risks & Impact" section>
+     >
+     > ### Decisions needed
+     > - <question 1>
+     > - <question 2>
+     >
+     > **Please reply to this comment with your answers or thoughts.**
+     >
+     > Full plan details: [Plan: <JIRA_KEY> - <Jira Title>](<confluence-page-url>)
+
+   - This lets stakeholders review and respond directly in Jira without needing to visit Confluence. The Confluence link is still included for anyone who wants the full technical detail.
 
 ### Step 8 — Transition the Jira Ticket
 
@@ -210,10 +259,13 @@ When the Jira ticket is in a review/planning status and `implement` was NOT pass
 
 ### Step 2 — Read Feedback
 
-Gather all feedback from Confluence:
+Gather feedback from both Jira and Confluence:
 
-1. Call `getConfluencePageFooterComments` with the page ID to get reviewer comments
-2. Call `getConfluencePage` to read the current plan content
+1. **Jira comments** — Call `getJiraIssue` with the cloud ID and issue key, and read any comments on the ticket. Look for replies to the "Plan ready for review" comment that contain stakeholder answers to the decisions needed.
+2. **Confluence comments** — Call `getConfluencePageFooterComments` with the page ID to get reviewer comments left on the plan page.
+3. Call `getConfluencePage` to read the current plan content.
+
+Combine feedback from both sources. If the same question was answered in both places, prefer the most recent response.
 
 ### Step 3 — Load the Latest Plan
 
