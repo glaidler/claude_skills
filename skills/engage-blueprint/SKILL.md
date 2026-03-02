@@ -1,17 +1,19 @@
 ---
 name: "engage-blueprint"
-description: "Plan-first workflow: create a plan PR from a Jira ticket, iterate on feedback, then implement."
+description: "Plan-first workflow: create a plan in Confluence from a Jira ticket, iterate on feedback, then implement."
 ---
 
 # Jira Plan Skill
 
-This skill implements a three-phase workflow that bridges Jira tickets to code via plan PRs.
+This skill implements a three-phase workflow that bridges Jira tickets to code. Plans are reviewed in Confluence, workflow is managed via Jira ticket status, and code is delivered via pull requests.
+
+**Communication rules**: The user may not be a developer. Never use git terminology (commit, push, stash, checkout, branch, merge, rebase, pull, PR) in messages to the user. Execute all git and CLI commands silently. Only surface results, progress, and errors in plain language. If a command fails, translate the error into a friendly message rather than showing raw output.
 
 ---
 
 ## Phase 1: Plan Creation
 
-When no plan branch exists for the given Jira key, create everything from scratch.
+When the Jira ticket is in an early-stage status (To Do, Open, Backlog, or similar).
 
 ### Step 1 — Retrieve Jira Ticket
 
@@ -25,38 +27,47 @@ When no plan branch exists for the given Jira key, create everything from scratc
    - **Priority**
    - **Description**
    - **Acceptance criteria** (if present in description or custom fields)
+   - **Current status**
 
-### Step 2 — Determine Base Branch
+Tell the user: "I've loaded the details for <JIRA_KEY>: <Title>. Let me explore the codebase and create a plan."
 
-Ask the user which branch to base the work on. Suggest the current branch or `main` as the default. Wait for user confirmation before proceeding.
+### Step 2 — Determine Starting Point
 
-### Step 3 — Create Branches
+The work will be based on the `main` branch by default.
 
-1. Fetch and checkout the base branch:
+- If the user is already on `main`, proceed automatically. Tell them: "I'll base this work on the main codebase."
+- If the user is on a different branch, tell them: "You're currently working from a place called `<branch-name>`. Normally I start from the main codebase. Should I use **main** (recommended), or start from where you are now?" Wait for the user to choose.
+
+Do NOT use terms like "base branch" — say "starting point" if needed.
+
+### Step 3 — Set Up Working Area
+
+Create the branch needed for implementation. The user does not need to understand branches — communicate as "setting up a working area for this ticket." Execute git commands silently and only surface errors in friendly language.
+
+1. Fetch and checkout the starting point:
    ```
    git fetch origin
-   git checkout <base-branch>
-   git pull origin <base-branch>
+   git checkout <starting-branch>
+   git pull origin <starting-branch>
    ```
 
-2. Slugify the Jira title: lowercase, replace non-alphanumeric characters with hyphens, collapse multiple hyphens, trim leading/trailing hyphens, truncate to keep the total branch name reasonable (under 60 chars).
+2. Slugify the Jira title: lowercase, replace non-alphanumeric characters with hyphens, collapse multiple hyphens, trim leading/trailing hyphens, truncate to keep the total branch name under 60 chars.
    - Example: "Fix Login Timeout on Mobile" → `fix-login-timeout-on-mobile`
 
 3. Create the implementation branch:
    ```
    git checkout -b <JIRA_KEY>-<slugified-title>
    ```
-   Example: `PROJ-123-fix-login-timeout-on-mobile`
 
 4. Push the implementation branch so it exists on remote:
    ```
    git push -u origin <implementation-branch>
    ```
 
-5. Create the plan branch from the implementation branch:
-   ```
-   git checkout -b <implementation-branch>__plan
-   ```
+> **Error translation guide** — if any git command fails, do NOT show the raw error. Translate it:
+> - "fatal: A branch named 'X' already exists" → "It looks like work on this ticket was already started. Let me check the current state."
+> - "error: failed to push" → "I wasn't able to upload the working area. This might be a permissions issue — please check with your team."
+> - Any other error → "Something went wrong while setting up. Here's a summary: [one-sentence plain description]. You may want to ask a developer for help."
 
 ### Step 4 — Explore the Codebase
 
@@ -111,134 +122,88 @@ Create the plan file at `.claude/plans/<JIRA_KEY>.md` using this template:
 
 Fill in every section thoroughly. The plan should be detailed enough that someone could implement it without additional context.
 
-### Step 6 — Commit & Push
+### Step 6 — Save the Plan Locally
+
+Save the plan file silently:
 
 ```
 git add .claude/plans/<JIRA_KEY>.md
 git commit -m "plan: <JIRA_KEY> - <Jira Title>"
-git push -u origin <plan-branch>
+git push origin <implementation-branch>
 ```
 
-### Step 7 — Create Draft PR
+Do not mention commits or pushes to the user.
 
-Create a draft PR from the plan branch targeting the implementation branch:
+### Step 7 — Publish Plan to Confluence
 
+1. **Determine the Confluence space**:
+   - Check if a space preference has been stored previously in `.claude/plans/.confluence-config.json`
+   - If no preference exists, call `getConfluenceSpaces` to list available spaces
+   - Ask the user: "Where should I publish the plan for review? Here are the available spaces:" and list the space names
+   - Store the user's choice in `.claude/plans/.confluence-config.json` as `{"spaceKey": "<KEY>"}` for future runs
+
+2. **Create the Confluence page**:
+   - Call `createConfluencePage` with:
+     - Space key from config
+     - Title: `Plan: <JIRA_KEY> - <Jira Title>`
+     - Body: the contents of the plan file (converted to Confluence-compatible format)
+   - Store the page ID in `.claude/plans/.confluence-config.json` under a key for this Jira issue, e.g., `{"spaceKey": "<KEY>", "pages": {"<JIRA_KEY>": "<PAGE_ID>"}}`
+
+3. **Link the plan on the Jira ticket**:
+   - Call `addCommentToJiraIssue` to post a comment on the ticket:
+     > "A plan has been created for this ticket. Please review it here: [Plan: <JIRA_KEY> - <Jira Title>](<confluence-page-url>)"
+
+### Step 8 — Transition the Jira Ticket
+
+1. Call `getTransitionsForJiraIssue` to get available transitions
+2. Look for a transition that moves the ticket to a review-like status (e.g., "In Review", "Planning", "In Progress")
+3. If a suitable transition is found, call `transitionJiraIssue` to move the ticket
+4. If no obvious transition exists, tell the user: "I've published the plan but I'm not sure which status to move the ticket to. Could you update the ticket status in Jira to indicate it's ready for review?"
+
+### Step 9 — Tell the User What Happened
+
+Tell the user in friendly language:
+
+- "Your plan is ready for review!"
+- Provide the Confluence page link: "You can read and comment on it here: [link]"
+- "Here's what to do next:"
+  1. "Open the link above and read through the plan"
+  2. "Leave comments on anything you'd like changed"
+  3. "Once you're happy with the plan, move the Jira ticket to an approved status (like 'Ready for Dev' or 'Approved')"
+  4. "Then come back and run `/engage-blueprint <JIRA_KEY> implement` to start building"
+- "If you get feedback and want me to update the plan, just run `/engage-blueprint <JIRA_KEY>` again and I'll pick up the comments."
+
+### Step 10 — Restore Saved Work
+
+If the user's work was saved aside at the start (via git stash), restore it now:
 ```
-gh pr create \
-  --base <implementation-branch> \
-  --head <plan-branch> \
-  --title "📋 Plan: <JIRA_KEY> - <Jira Title>" \
-  --body "$(cat <<'EOF'
-## Plan for <JIRA_KEY>
-
-This PR contains the implementation plan for [<JIRA_KEY>](<jira-url>).
-
-### How to review
-1. Read `.claude/plans/<JIRA_KEY>.md`
-2. Leave comments on the plan file or on the PR
-3. Approve when the plan looks good
-
-### Next steps
-Once approved, run `/engage-blueprint <JIRA_KEY> implement` to execute the plan.
-
----
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-EOF
-)" \
-  --draft
+git stash list | grep "engage-blueprint: saved before <JIRA_KEY>"
 ```
-
-### Step 8 — Output Result
-
-Tell the user:
-- The plan PR URL
-- The implementation branch name
-- How to proceed: review the PR, leave comments, then run `/engage-blueprint <JIRA_KEY>` to iterate or `/engage-blueprint <JIRA_KEY> implement` to implement
+If found, run `git stash pop` and tell the user: "I've restored the work you had in progress before we started."
 
 ---
 
 ## Phase 2: Review & Adjust
 
-When a plan branch and PR already exist, and `implement` was NOT passed.
+When the Jira ticket is in a review/planning status and `implement` was NOT passed.
 
-### Step 1 — Find the Existing PR
+### Step 1 — Find the Existing Plan
 
-```
-gh pr list --head <plan-branch> --json number,url,state --jq '.[0]'
-```
+1. Read the Confluence config from `.claude/plans/.confluence-config.json` to get the page ID for this Jira issue
+2. If no config exists, search Confluence for the plan page:
+   - Call `getConfluenceSpaces` then search for a page titled `Plan: <JIRA_KEY>*`
+3. If no plan page is found, tell the user: "I couldn't find an existing plan for this ticket. Would you like me to create one? Run `/engage-blueprint <JIRA_KEY>` on a ticket in 'To Do' status to start fresh."
 
-If no PR found, check if the branch exists and offer to recreate the PR.
+### Step 2 — Read Feedback
 
-### Step 2 — Read PR Feedback
+Gather all feedback from Confluence:
 
-Gather all feedback:
+1. Call `getConfluencePageFooterComments` with the page ID to get reviewer comments
+2. Call `getConfluencePage` to read the current plan content
 
-1. PR review comments (inline on files):
-   ```
-   gh api repos/{owner}/{repo}/pulls/<pr-number>/comments --jq '.[] | {path: .path, body: .body, line: .line, user: .user.login}'
-   ```
+### Step 3 — Load the Latest Plan
 
-2. PR conversation comments:
-   ```
-   gh pr view <pr-number> --comments --json comments --jq '.comments[] | {body: .body, user: .author.login}'
-   ```
-
-3. PR review status:
-   ```
-   gh pr view <pr-number> --json reviews --jq '.reviews[] | {state: .state, body: .body, user: .author.login}'
-   ```
-
-### Step 3 — Checkout Plan Branch
-
-```
-git fetch origin
-git checkout <plan-branch>
-git pull origin <plan-branch>
-```
-
-### Step 4 — Update the Plan
-
-1. Read the current plan from `.claude/plans/<JIRA_KEY>.md`
-2. Analyze the feedback:
-   - Summarize each piece of feedback for the user
-   - Suggest changes to address each comment
-3. Ask the user if the proposed changes look good
-4. Update `.claude/plans/<JIRA_KEY>.md` with the changes
-
-### Step 5 — Commit & Push
-
-```
-git add .claude/plans/<JIRA_KEY>.md
-git commit -m "plan: update <JIRA_KEY> based on review feedback"
-git push origin <plan-branch>
-```
-
-### Step 6 — Notify User
-
-Tell the user:
-- What changes were made to the plan
-- The PR URL for continued review
-- Remind them to run `/engage-blueprint <JIRA_KEY> implement` when the plan is approved
-
----
-
-## Phase 3: Implement
-
-When `implement` is explicitly passed as the second argument. This is the destructive phase that writes real code.
-
-### Step 1 — Verify Plan Status
-
-1. Find the plan PR:
-   ```
-   gh pr list --head <plan-branch> --json number,url,state,reviews --jq '.[0]'
-   ```
-
-2. Check if the PR has been approved or merged:
-   - If **approved** → proceed
-   - If **merged** → proceed
-   - If **neither** → warn the user that the plan hasn't been approved yet and ask if they want to proceed anyway. Do NOT proceed without explicit confirmation.
-
-### Step 2 — Switch to Implementation Branch
+Silently ensure you have the latest version:
 
 ```
 git fetch origin
@@ -246,23 +211,101 @@ git checkout <implementation-branch>
 git pull origin <implementation-branch>
 ```
 
-If the plan PR was merged, the plan file should already be on this branch. If not, read it from the plan branch:
+Tell the user: "I'm loading the latest version of your plan." Do not mention git operations.
+
+### Step 4 — Update the Plan
+
+1. Read the current plan from `.claude/plans/<JIRA_KEY>.md`
+2. Analyze the feedback:
+   - Summarize each piece of feedback for the user in plain language
+   - Suggest changes to address each comment
+3. Ask the user if the proposed changes look good
+4. Update `.claude/plans/<JIRA_KEY>.md` with the changes
+
+### Step 5 — Save and Upload Updates
+
+Save changes silently:
+
 ```
-git show <plan-branch>:.claude/plans/<JIRA_KEY>.md
+git add .claude/plans/<JIRA_KEY>.md
+git commit -m "plan: update <JIRA_KEY> based on review feedback"
+git push origin <implementation-branch>
+```
+
+Then update the Confluence page:
+- Call `updateConfluencePage` with the page ID and the updated plan content
+
+Optionally reply to specific comments on the Confluence page using `createConfluenceFooterComment` to acknowledge feedback was addressed.
+
+### Step 6 — Tell the User
+
+Tell the user:
+- "I've updated your plan based on the review feedback."
+- Summarize the changes in bullet points
+- Provide the Confluence page link: "You can see the updated plan here: [link]"
+- "Once the reviewer is happy and moves the ticket to an approved status, run `/engage-blueprint <JIRA_KEY> implement` to start building."
+
+### Step 7 — Restore Saved Work
+
+If the user's work was saved aside at the start (via git stash), restore it now:
+```
+git stash list | grep "engage-blueprint: saved before <JIRA_KEY>"
+```
+If found, run `git stash pop` and tell the user: "I've restored the work you had in progress before we started."
+
+---
+
+## Phase 3: Implement
+
+When the Jira ticket is in an approved status and `implement` was explicitly passed. This phase writes real code.
+
+### Step 1 — Verify the Ticket is Approved
+
+1. Fetch the Jira issue using `getJiraIssue` and check its current status
+2. Check whether the status indicates approval:
+   - If status is **"Approved"**, **"Ready for Dev"**, **"Selected for Development"**, or similar → proceed to Step 2
+   - If status is **anything else** → **STOP**. Do NOT offer to proceed. Tell the user: "This ticket hasn't been approved yet. Before I can start building, someone needs to review the plan and move the ticket to an approved status in Jira. You can find the plan here: [Confluence page link]. Once the ticket is approved, come back and run this command again."
+
+This is a hard gate. Under no circumstances should implementation proceed without the ticket being in an approved status.
+
+**Escape valve**: If the user says they are the only person on the project and cannot get someone else to approve, tell them: "You can move the ticket to the approved status yourself in Jira, and then run this command again."
+
+### Step 2 — Prepare to Build
+
+Tell the user: "The plan is approved! I'm setting things up to start building."
+
+Silently switch to the implementation branch:
+```
+git fetch origin
+git checkout <implementation-branch>
+git pull origin <implementation-branch>
+```
+
+If the implementation branch doesn't exist, create it from the starting point (default `main`):
+```
+git fetch origin
+git checkout main
+git pull origin main
+git checkout -b <JIRA_KEY>-<slugified-title>
+git push -u origin <implementation-branch>
 ```
 
 ### Step 3 — Read the Plan
 
 Read `.claude/plans/<JIRA_KEY>.md` and parse the implementation steps.
 
-Present the plan summary to the user and ask for confirmation before starting implementation.
+If the plan file doesn't exist locally, fetch it from Confluence:
+- Call `getConfluencePage` using the page ID from `.claude/plans/.confluence-config.json`
+- Save the content to `.claude/plans/<JIRA_KEY>.md`
+
+Present the plan summary to the user in plain language and ask for confirmation: "Here's what I'm going to build: [summary]. Ready to go?"
 
 ### Step 4 — Execute the Plan
 
 Work through each implementation step from the plan:
 
 1. For each step:
-   - Tell the user which step you're working on
+   - Use plain language when describing progress. Say "I'm working on [description of what the step accomplishes]" rather than "I'm modifying [filename]". Only mention filenames if the user has demonstrated technical comfort.
    - Make the code changes described in the plan
    - Verify the changes compile/lint if applicable
 
@@ -270,19 +313,23 @@ Work through each implementation step from the plan:
    - Run existing tests to ensure nothing is broken
    - Add new tests as specified in the plan
 
-3. Commit logically — group related changes into coherent commits rather than one giant commit.
+3. Save work logically — group related changes into coherent saves rather than one giant save. Execute git commands silently:
+   ```
+   git add <relevant-files>
+   git commit -m "<descriptive message>"
+   ```
 
 ### Step 5 — Final Review
 
 After implementation is complete:
 
-1. Run the full test suite if one exists
-2. Show the user a summary of all changes made
-3. Ask the user to review the changes
-4. Offer to create a PR from the implementation branch to the base branch:
+1. Run the full test suite if one exists. Tell the user: "I'm running tests to make sure everything works."
+2. Show the user a plain-language summary of what was built, organized by what changed from the user's perspective (not file-by-file).
+3. Ask: "Would you like me to submit this for code review?"
+4. If yes, create the PR:
    ```
    gh pr create \
-     --base <base-branch> \
+     --base <starting-branch> \
      --head <implementation-branch> \
      --title "<JIRA_KEY>: <Jira Title>" \
      --body "$(cat <<'EOF'
@@ -293,7 +340,7 @@ After implementation is complete:
    [<JIRA_KEY>](<jira-url>)
 
    ## Plan
-   See `.claude/plans/<JIRA_KEY>.md` for the full implementation plan.
+   See the [implementation plan](<confluence-page-url>) for full details.
 
    ## Changes
    <list of key changes>
@@ -302,10 +349,23 @@ After implementation is complete:
    <how the changes were tested>
 
    ---
-   🤖 Generated with [Claude Code](https://claude.com/claude-code)
+   Generated with [Claude Code](https://claude.com/claude-code)
    EOF
    )"
    ```
+   Tell the user: "Done! Your code has been submitted for review: [PR URL]"
+
+5. Update the Jira ticket:
+   - Call `addCommentToJiraIssue` to post: "Implementation complete. Code review: [PR URL]"
+   - Optionally call `transitionJiraIssue` to move the ticket to an "In Code Review" or "In Progress" status if available
+
+### Step 6 — Restore Saved Work
+
+If the user's work was saved aside at the start (via git stash), restore it now:
+```
+git stash list | grep "engage-blueprint: saved before <JIRA_KEY>"
+```
+If found, run `git stash pop` and tell the user: "I've restored the work you had in progress before we started."
 
 ---
 
@@ -314,7 +374,6 @@ After implementation is complete:
 | Branch | Pattern | Example |
 |--------|---------|---------|
 | Implementation | `<JIRA_KEY>-<slugified-title>` | `PROJ-123-fix-login-timeout` |
-| Plan | `<implementation-branch>__plan` | `PROJ-123-fix-login-timeout__plan` |
 
 ## Slugification Rules
 
@@ -324,3 +383,19 @@ After implementation is complete:
 4. Collapse consecutive hyphens into one
 5. Remove leading and trailing hyphens
 6. Truncate so the full branch name (including Jira key prefix) stays under 60 characters
+
+## Confluence Config File
+
+The file `.claude/plans/.confluence-config.json` stores persistent configuration:
+
+```json
+{
+  "spaceKey": "TEAM",
+  "pages": {
+    "PROJ-123": "confluence-page-id-here",
+    "PROJ-456": "confluence-page-id-here"
+  }
+}
+```
+
+This file is created automatically on first run when the user selects a Confluence space. It allows subsequent runs to find existing plan pages without searching.
