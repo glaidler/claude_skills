@@ -1,20 +1,10 @@
 {
-  "name": "clira",
+  "name": "engage-blueprint",
   "version": "1.0.0",
-  "description": "Clira — Plan-first Jira workflow for Claude Code. Bridge Jira tickets to implementation via Confluence plans and Jira workflow.",
-  "author": "glaidler",
-  "skills": [
-    {
-      "name": "engage-blueprint",
-      "description": "Plan-first workflow: create a plan in Confluence from a Jira ticket, iterate on feedback, then implement.",
-      "path": "skills/engage-blueprint"
-    }
-  ],
-  "commands": [
-    {
-      "name": "engage-blueprint",
-      "description": "Plan and implement Jira tickets via plan-first workflow",
-      "path": "commands/engage-blueprint.md"
-    }
-  ]
+  "description": "Engage Blueprint — Plan-first Jira workflow for Claude Code. Bridge Jira tickets to implementation via Confluence plans and Jira workflow.",
+  "author": {
+    "name": "glaidler"
+  },
+  "skills": "./skills",
+  "commands": "./commands"
 }

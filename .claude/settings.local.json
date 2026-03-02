@@ -3,7 +3,12 @@
     "allow": [
       "WebFetch(domain:www.atlassian.com)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:support.atlassian.com)"
+      "WebFetch(domain:support.atlassian.com)",
+      "Bash(claude:*)",
+      "Bash(claude plugin:*)",
+      "Bash(ls -la /c/Dev/Percy/claude_skills/.claude*)",
+      "Bash(ls ~/.claude/*.json)",
+      "Bash(echo \"EXIT: $?\")"
     ]
   }
 }
