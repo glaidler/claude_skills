@@ -75,11 +75,11 @@ Create the plan file at `.claude/plans/<JIRA_KEY>.md` using this template. The t
 
 ## Decisions Needed
 
-> **Reviewers**: please leave comments on this page if you have thoughts on any of these, or if anything in the summary above is unclear.
+> **Reviewers**: please reply with your answers by number (e.g. "1. Yes, 2. Option A") so everything fits in one comment.
 
-- <Question or decision 1 that needs stakeholder input>
-- <Question or decision 2>
-- <If no decisions are needed, replace this list with "No open questions — this one is straightforward.">
+1. <Question or decision 1 that needs stakeholder input>
+2. <Question or decision 2>
+<If no decisions are needed, replace the numbered list with "No open questions — this one is straightforward.">
 
 ## Risks & Impact
 
@@ -161,10 +161,10 @@ Save the plan file to `.claude/plans/<JIRA_KEY>.md`. No git operations are neede
      > - <bullet points from the "Risks & Impact" section>
      >
      > ### Decisions needed
-     > - <question 1>
-     > - <question 2>
+     > 1. <question 1>
+     > 2. <question 2>
      >
-     > **Please reply to this comment with your answers or thoughts.**
+     > **Reply with your answers by number (e.g. "1. Yes, 2. Option A") so everything fits in one comment.**
      >
      > Full plan details: [Plan: <JIRA_KEY> - <Jira Title>](<confluence-page-url>)
 
