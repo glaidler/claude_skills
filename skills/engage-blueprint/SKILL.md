@@ -81,6 +81,26 @@ Create the plan file at `.claude/plans/<JIRA_KEY>.md` using this template. The t
 2. <Question or decision 2>
 <If no decisions are needed, replace the numbered list with "No open questions — this one is straightforward.">
 
+## UI Mockup
+
+<Include this section ONLY if the ticket involves user-visible UI changes. Delete it entirely for backend-only or non-visual work.>
+
+<ASCII wireframe showing the before and after. Use box-drawing characters to represent the layout. Label interactive elements. Example:>
+
+```
+BEFORE:
+┌──────────────────────────────┐
+│  Header            [Log in]  │
+└──────────────────────────────┘
+
+AFTER:
+┌──────────────────────────────┐
+│  Header    [Sign up] [Log in]│
+└──────────────────────────────┘
+```
+
+<Show only the parts of the UI that change. Keep it simple — this is a sketch, not a spec.>
+
 ## Risks & Impact
 
 - <Plain-language risk 1, e.g. "Users will be logged out when we deploy this">
