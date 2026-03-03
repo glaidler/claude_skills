@@ -254,7 +254,26 @@ This is a hard gate. Under no circumstances should implementation proceed withou
 
 **Escape valve**: If the user says they are the only person on the project and cannot get someone else to approve, tell them: "You can move the ticket to the approved status yourself in Jira, and then run this command again."
 
-### Step 2 — Prepare to Build
+### Step 2 — Check for Unaddressed Feedback
+
+Before building, check whether any comments were left after the plan was last updated:
+
+1. Read the Confluence page using `getConfluencePage` — note the page's `version.when` (last modified timestamp).
+2. Read Confluence footer comments using `getConfluencePageFooterComments`.
+3. Read Jira comments from the ticket using `getJiraIssue`.
+4. Compare timestamps: if any comments from either source are **newer** than the plan's last modified timestamp, they may not have been incorporated.
+
+If unaddressed comments are found:
+- List them for the user in plain language: "I found feedback that came in after the plan was last updated:"
+  - 1. "<comment summary>" — <author>
+  - 2. "<comment summary>" — <author>
+- Ask: "Would you like me to **update the plan** to address these before building, or **go ahead** with the current plan?"
+  - If update: run the Phase 2 review flow (Steps 2–5) and then return here.
+  - If go ahead: proceed to Step 3.
+
+If no unaddressed comments are found, proceed to Step 3.
+
+### Step 3 — Prepare to Build
 
 Tell the user: "The plan is approved! I'm setting things up to start building."
 
@@ -287,7 +306,7 @@ Tell the user: "The plan is approved! I'm setting things up to start building."
 > - "error: failed to push" → "I wasn't able to upload the working area. This might be a permissions issue — please check with your team."
 > - Any other error → "Something went wrong while setting up. Here's a summary: [one-sentence plain description]. You may want to ask a developer for help."
 
-### Step 3 — Read the Plan
+### Step 4 — Read the Plan
 
 Read `.claude/plans/<JIRA_KEY>.md` and parse the implementation steps.
 
@@ -297,7 +316,7 @@ If the plan file doesn't exist locally, fetch it from Confluence:
 
 Present the plan summary to the user in plain language and ask for confirmation: "Here's what I'm going to build: [summary]. Ready to go?"
 
-### Step 4 — Execute the Plan
+### Step 5 — Execute the Plan
 
 Work through each implementation step from the plan:
 
@@ -316,7 +335,7 @@ Work through each implementation step from the plan:
    git commit -m "<descriptive message>"
    ```
 
-### Step 5 — Final Review
+### Step 6 — Final Review
 
 After implementation is complete:
 
@@ -360,7 +379,7 @@ After implementation is complete:
    - Call `addCommentToJiraIssue` to post: "Implementation complete. Code review: [PR URL]"
    - Optionally call `transitionJiraIssue` to move the ticket to an "In Code Review" or "In Progress" status if available
 
-### Step 6 — Restore Saved Work
+### Step 7 — Restore Saved Work
 
 If the user's work was saved aside at the start (via git stash), restore it now:
 ```
