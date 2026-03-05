@@ -25,6 +25,50 @@ Only proceed if both checks pass.
 
 ---
 
+## Pre-Phase Check — Verify sn_web_ux Path
+
+Check `.claude/plans/.confluence-config.json` for a `snWebUxPath` key.
+
+1. **If the key exists** — verify the path is a valid directory containing a `package.json` and a `src/` folder.
+   - On failure: "The UI component library path I have on file doesn't seem to be valid any more. Could you give me the current location of the sn_web_ux folder?"
+   - Save the corrected path to the config file.
+
+2. **If the key does not exist** — ask the user: "I need the path to the sn_web_ux component library so I can build UI previews. Where is it on your machine? (e.g. C:\Dev\sn_web_ux)"
+   - Validate the path exists, contains `package.json` and `src/`.
+   - Save it to `.claude/plans/.confluence-config.json` as `"snWebUxPath": "<path>"`.
+
+---
+
+## Pre-Phase Check — Verify Azure Storage Config
+
+Check `.claude/plans/.confluence-config.json` for `azure.storageAccount` and `azure.container`.
+
+1. **If both keys exist** — verify access silently:
+   ```
+   az storage container show --account-name <storageAccount> --name <container> --auth-mode login
+   ```
+   - On failure: "I can't access the Azure storage account '<storageAccount>'. This might be a permissions issue — please check with your team."
+
+2. **If either key is missing** — ask the user:
+   - "What is the name of the Azure Storage account where I should upload UI previews?" → save as `azure.storageAccount`
+   - "What is the blob container name?" → save as `azure.container`
+   - Verify access as above before proceeding.
+
+The config file now looks like:
+```json
+{
+  "spaceKey": "TEAM",
+  "pages": { ... },
+  "azure": {
+    "storageAccount": "myaccount",
+    "container": "$web"
+  },
+  "snWebUxPath": "/path/to/sn_web_ux"
+}
+```
+
+---
+
 ## Phase 1: Plan Creation
 
 When the Jira ticket is in an early-stage status (To Do, Open, Backlog, or similar).
@@ -56,6 +100,8 @@ Before writing the plan, understand the codebase:
 
 Spend adequate time here — the quality of the plan depends on understanding the code.
 
+**UI change identification is critical.** While exploring, explicitly catalogue every user-visible UI change the ticket will require. This list drives the mandatory mockup step later — if a UI change is missed here, it won't get mocked.
+
 ### Step 3 — Write the Plan
 
 Create the plan file at `.claude/plans/<JIRA_KEY>.md` using this template. The template has two distinct halves: a **business summary** at the top for stakeholders and reviewers (written in plain, non-technical language), and a **technical plan** below the divider for developers.
@@ -81,25 +127,17 @@ Create the plan file at `.claude/plans/<JIRA_KEY>.md` using this template. The t
 2. <Question or decision 2>
 <If no decisions are needed, replace the numbered list with "No open questions — this one is straightforward.">
 
-## UI Mockup
+## UI Preview
 
 <Include this section ONLY if the ticket involves user-visible UI changes. Delete it entirely for backend-only or non-visual work.>
 
-<ASCII wireframe showing the before and after. Use box-drawing characters to represent the layout. Label interactive elements. Example:>
+[View all mockups](<azure-index-url>)
 
-```
-BEFORE:
-┌──────────────────────────────┐
-│  Header            [Log in]  │
-└──────────────────────────────┘
-
-AFTER:
-┌──────────────────────────────┐
-│  Header    [Sign up] [Log in]│
-└──────────────────────────────┘
-```
-
-<Show only the parts of the UI that change. Keep it simple — this is a sketch, not a spec.>
+<List each mockup with its unique ID, deep link, and description:>
+| ID | Preview | Description |
+|----|---------|-------------|
+| <JIRA_KEY>-M1 | [View](<mockup-1-url>) | <What this mockup shows> |
+| <JIRA_KEY>-M2 | [View](<mockup-2-url>) | <What this mockup shows> |
 
 ## Risks & Impact
 
@@ -148,11 +186,87 @@ AFTER:
 
 Fill in every section thoroughly. The business summary sections should be understandable by anyone on the team. The technical sections should be detailed enough that a developer could implement the plan without additional context.
 
-### Step 4 — Save the Plan Locally
+**Enforcement rule — UI mockup gate:** After writing the plan, review the "What Changes for Users" section. If ANY bullet point describes a visual or interface change (new buttons, layout changes, new screens, modified forms, style changes, etc.), then Step 4 (Build UI Mockups) is **mandatory** and every listed UI change must have a corresponding mockup. The plan MUST NOT be published to Confluence without mockups for all identified UI changes. There are no exceptions — if a mockup cannot be created, stop and ask the user for help rather than proceeding without it.
+
+### Step 4 — Build UI Mockups
+
+**This step is mandatory if the plan identifies ANY user-visible UI changes.** If the "What Changes for Users" section describes visual or interface changes, you MUST create mockups before proceeding. Do not skip this step. If you cannot create a mockup for a specific UI change (e.g., the relevant components don't exist in sn_web_ux), stop and ask the user for guidance rather than skipping silently.
+
+If the ticket has no UI-visible changes (backend-only, configuration, etc.), skip this step entirely.
+
+#### 4a — Initialize the Mockups Project (first run only)
+
+If `.claude/mockups/` does not already exist:
+
+1. Scaffold a minimal React + Vite project:
+   ```
+   npm create vite@latest .claude/mockups -- --template react
+   cd .claude/mockups && npm install
+   ```
+2. Install the sn_web_ux component library as a local dependency:
+   ```
+   cd .claude/mockups && npm install --save <snWebUxPath from config>
+   ```
+3. Add `.claude/mockups/` to the project's `.gitignore` if not already present.
+
+If `.claude/mockups/` already exists, just ensure sn_web_ux is still installed:
+```
+cd .claude/mockups && npm ls sn_web_ux || npm install --save <snWebUxPath from config>
+```
+
+#### 4b — Create Mockup Components
+
+Each mockup gets a **unique ID** using the pattern `<JIRA_KEY>-M<n>` where `<n>` is a sequential number starting at 1. For example: `PROJ-123-M1`, `PROJ-123-M2`, `PROJ-123-M3`. These IDs are used everywhere — file names, URLs, the plan, and the Confluence feedback sections — so reviewers can reference a specific mockup unambiguously.
+
+1. Create the directory `.claude/mockups/src/pages/<JIRA_KEY>/`.
+2. For **each** UI change identified in the plan, assign the next available mockup ID and create a React component file named `<MOCKUP_ID>.jsx` (e.g., `PROJ-123-M1.jsx`). Each component should:
+   - Import real components from `sn_web_ux` (buttons, forms, layouts, etc.)
+   - Show a **"Before"** and **"After"** view side by side, or just **"Proposed"** if it's a brand new screen
+   - Use realistic sample data that matches the ticket's context
+   - Include a clear header showing the mockup ID and a plain-language description of what changed
+3. Create an index page at `.claude/mockups/src/pages/<JIRA_KEY>/index.jsx` that:
+   - Displays the Jira ticket title and key at the top
+   - Lists all mockups with their IDs, descriptions, and direct links
+4. Update `.claude/mockups/src/App.jsx` to add routes:
+   - `/<JIRA_KEY>/` → index page
+   - `/<JIRA_KEY>/<MOCKUP_ID>` → individual mockup page (one route per mockup)
+
+#### 4c — Build the Mockup
+
+```
+cd .claude/mockups && npm run build -- --base=/<JIRA_KEY>/
+```
+
+On failure: "I ran into a problem building the UI previews. Here's what went wrong: [friendly one-sentence summary of the build error]." Then stop and ask the user how to proceed.
+
+#### 4d — Upload to Azure Blob Storage
+
+Read `azure.storageAccount` and `azure.container` from `.claude/plans/.confluence-config.json`, then upload:
+
+```
+az storage blob upload-batch \
+  --account-name <storageAccount> \
+  --destination <container>/<JIRA_KEY> \
+  --source .claude/mockups/dist \
+  --overwrite \
+  --auth-mode login
+```
+
+On failure: "I couldn't upload the UI previews. This might be a permissions issue — please check with your team."
+
+#### 4e — Record the Preview URLs
+
+Construct the URLs for each mockup:
+- **Index URL:** `https://<storageAccount>.z13.web.core.windows.net/<JIRA_KEY>/`
+- **Per-mockup URL:** `https://<storageAccount>.z13.web.core.windows.net/<JIRA_KEY>/<MOCKUP_ID>`
+
+Store the index URL and the list of mockup IDs with their descriptions and individual URLs. These will be used in the plan file, the Confluence page feedback sections, and the Jira comment.
+
+### Step 5 — Save the Plan Locally
 
 Save the plan file to `.claude/plans/<JIRA_KEY>.md`. No git operations are needed at this stage — the plan is saved locally and will be published to Confluence in the next step.
 
-### Step 5 — Publish Plan to Confluence
+### Step 6 — Publish Plan to Confluence
 
 1. **Determine the Confluence space**:
    - Check if a space preference has been stored previously in `.claude/plans/.confluence-config.json`
@@ -164,7 +278,34 @@ Save the plan file to `.claude/plans/<JIRA_KEY>.md`. No git operations are neede
    - Call `createConfluencePage` with:
      - Space key from config
      - Title: `Plan: <JIRA_KEY> - <Jira Title>`
-     - Body: the contents of the plan file (converted to Confluence-compatible format)
+     - Body: the contents of the plan file (converted to Confluence-compatible format), **plus** a per-mockup feedback section appended after the UI Preview table (but still above the technical divider). Format this section as:
+
+       > ## Mockup Feedback
+       >
+       > Please leave feedback on each mockup below. Reference the mockup ID so we know exactly which one you mean.
+       >
+       > ---
+       >
+       > ### <JIRA_KEY>-M1 — <short description>
+       > [View mockup](<mockup-1-url>)
+       >
+       > *Leave a comment on this section with your feedback for this mockup.*
+       >
+       > ---
+       >
+       > ### <JIRA_KEY>-M2 — <short description>
+       > [View mockup](<mockup-2-url>)
+       >
+       > *Leave a comment on this section with your feedback for this mockup.*
+       >
+       > ---
+       >
+       > <Repeat for each mockup>
+
+     Each mockup gets its own headed section so reviewers can leave **inline Confluence comments** directly on the relevant heading. This makes it clear which mockup the feedback applies to.
+
+     Omit the "Mockup Feedback" section entirely for non-UI tickets.
+
    - Store the page ID in `.claude/plans/.confluence-config.json` under a key for this Jira issue, e.g., `{"spaceKey": "<KEY>", "pages": {"<JIRA_KEY>": "<PAGE_ID>"}}`
 
 3. **Post the plan summary and questions on the Jira ticket**:
@@ -176,6 +317,9 @@ Save the plan file to `.claude/plans/<JIRA_KEY>.md`. No git operations are neede
      >
      > **What changes for users:**
      > - <bullet points from the "What Changes for Users" section>
+     >
+     > **UI Preview:** [View mockups](<azure-preview-url>)
+     > <Include this line ONLY if UI mockups were built in Step 4. Omit entirely for non-UI tickets.>
      >
      > **Risks & impact:**
      > - <bullet points from the "Risks & Impact" section>
@@ -190,14 +334,14 @@ Save the plan file to `.claude/plans/<JIRA_KEY>.md`. No git operations are neede
 
    - This lets stakeholders review and respond directly in Jira without needing to visit Confluence. The Confluence link is still included for anyone who wants the full technical detail.
 
-### Step 6 — Transition the Jira Ticket
+### Step 7 — Transition the Jira Ticket
 
 1. Call `getTransitionsForJiraIssue` to get available transitions
 2. Look for a transition that moves the ticket to a review-like status (e.g., "In Review", "Planning", "In Progress")
 3. If a suitable transition is found, call `transitionJiraIssue` to move the ticket
 4. If no obvious transition exists, tell the user: "I've published the plan but I'm not sure which status to move the ticket to. Could you update the ticket status in Jira to indicate it's ready for review?"
 
-### Step 7 — Tell the User What Happened
+### Step 8 — Tell the User What Happened
 
 Tell the user in friendly language:
 
@@ -233,6 +377,11 @@ Gather feedback from both Jira and Confluence:
 
 Combine feedback from both sources. If the same question was answered in both places, prefer the most recent response.
 
+**Mockup-specific feedback:** When processing Confluence comments, check whether each comment is attached to one of the "Mockup Feedback" headings (e.g., `### PROJ-123-M1 — ...`). If so, tag that feedback with the mockup ID so it can be routed to the correct mockup component during the rebuild step. Present mockup feedback to the user grouped by ID, e.g.:
+
+- **PROJ-123-M1** (Login form redesign): "The submit button should be more prominent" — Jane
+- **PROJ-123-M2** (Dashboard layout): "Can we add a sidebar?" — Tom
+
 ### Step 3 — Update the Plan
 
 1. Read the current plan from `.claude/plans/<JIRA_KEY>.md` (or fetch from Confluence if the local file is missing)
@@ -242,18 +391,38 @@ Combine feedback from both sources. If the same question was answered in both pl
 3. Ask the user if the proposed changes look good
 4. Update `.claude/plans/<JIRA_KEY>.md` with the changes
 
-### Step 4 — Save and Upload Updates
+### Step 4 — Rebuild UI Mockups (if UI sections changed)
+
+If the plan update in Step 3 affected any UI-related sections ("What Changes for Users", "UI Preview", or any mockup-relevant content), or if mockup-specific feedback was received:
+
+1. Update only the affected mockup components in `.claude/mockups/src/pages/<JIRA_KEY>/`, targeting each by its mockup ID (e.g., update `PROJ-123-M1.jsx` for feedback tagged to `PROJ-123-M1`). Leave unchanged mockups untouched.
+2. Rebuild: `cd .claude/mockups && npm run build -- --base=/<JIRA_KEY>/`
+3. Re-upload to Azure (same URL, overwrite):
+   ```
+   az storage blob upload-batch \
+     --account-name <storageAccount> \
+     --destination <container>/<JIRA_KEY> \
+     --source .claude/mockups/dist \
+     --overwrite \
+     --auth-mode login
+   ```
+4. Tell the user: "I've updated the UI previews to reflect the changes. You can see them at the same link."
+
+If no UI-related sections changed, skip this step.
+
+### Step 5 — Save and Upload Updates
 
 Save the updated plan to `.claude/plans/<JIRA_KEY>.md` locally, then update Confluence:
 - Call `updateConfluencePage` with the page ID and the updated plan content
 
 Optionally reply to specific comments on the Confluence page using `createConfluenceFooterComment` to acknowledge feedback was addressed.
 
-### Step 5 — Tell the User
+### Step 6 — Tell the User
 
 Tell the user:
 - "I've updated your plan based on the review feedback."
 - Summarize the changes in bullet points
+- If mockups were rebuilt: "I've also updated the UI previews — same link as before."
 - Provide the Confluence page link: "You can see the updated plan here: [link]"
 - "Once the reviewer is happy and moves the ticket to an approved status, run `/engage-blueprint <JIRA_KEY> implement` to start building."
 
@@ -434,8 +603,13 @@ The file `.claude/plans/.confluence-config.json` stores persistent configuration
   "pages": {
     "PROJ-123": "confluence-page-id-here",
     "PROJ-456": "confluence-page-id-here"
-  }
+  },
+  "azure": {
+    "storageAccount": "myaccount",
+    "container": "$web"
+  },
+  "snWebUxPath": "/path/to/sn_web_ux"
 }
 ```
 
-This file is created automatically on first run when the user selects a Confluence space. It allows subsequent runs to find existing plan pages without searching.
+This file is created automatically on first run when the user selects a Confluence space. Azure storage and sn_web_ux settings are added when first needed for UI mockups.

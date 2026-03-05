@@ -16,7 +16,13 @@ Before doing anything else, silently verify that the required tools are availabl
 1. **Atlassian connection** — Call `getAccessibleAtlassianResources`
    - On any failure: "I can't connect to Jira and Confluence. The Atlassian integration may not be set up yet. Please check that the Atlassian MCP server is configured in your Claude Code settings."
 
-Only proceed if this check passes.
+2. **Azure CLI** — Run `az --version`
+   - On any failure: "The Azure command-line tool isn't installed. I need it to upload UI previews. Please ask your team to install it from https://learn.microsoft.com/en-us/cli/azure/install-azure-cli"
+
+3. **Azure authentication** — Run `az account show`
+   - On any failure: "Azure CLI is installed but not signed in. Please run `az login` in a terminal first, then try again."
+
+Only proceed if all checks pass.
 
 ## Gather Context
 
