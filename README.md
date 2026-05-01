@@ -1,4 +1,4 @@
-# Engage Blueprint
+# atlassian Blueprint
 
 A Claude Code plugin that bridges Jira tickets to code through a plan-first workflow. Plans are reviewed in Confluence, workflow is managed via Jira ticket status, and code is delivered via pull requests.
 
