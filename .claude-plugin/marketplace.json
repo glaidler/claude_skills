@@ -1,23 +1,23 @@
 {
-  "name": "engage-claude-plugins",
+  "name": "atlassian-claude-plugins",
   "owner": {
     "name": "glaidler"
   },
   "metadata": {
-    "description": "Engage Education Claude Plugins — Plan-first Jira workflow for Claude Code",
+    "description": "Atlassian Claude Plugins — Plan-first Jira workflow for Claude Code",
     "version": "1.0.0"
   },
   "plugins": [
     {
-      "name": "engage-blueprint",
+      "name": "atlassian-blueprint",
       "description": "Bridge Jira tickets to implementation via plan-first PR workflow. Creates a plan PR for review before writing any code.",
       "source": "./",
       "strict": false,
       "skills": [
-        "./skills/engage-blueprint"
+        "./skills/atlassian-blueprint"
       ],
       "commands": [
-        "./commands/engage-blueprint.md"
+        "./commands/atlassian-blueprint.md"
       ]
     }
   ]

@@ -9,7 +9,7 @@ Add to your project's `.claude/settings.json`:
 ```json
 {
   "permissions": {
-    "engage-blueprint@engage-claude-plugins": true
+    "atlassian-blueprint@atlassian-claude-plugins": true
   }
 }
 ```
@@ -33,7 +33,7 @@ The workflow has three phases:
 
 ### Phase 1 — Plan
 
-Run `/engage-blueprint PROJ-123` on a ticket in "To Do" status. The skill:
+Run `/atlassian-blueprint PROJ-123` on a ticket in "To Do" status. The skill:
 
 1. Reads the Jira ticket details
 2. Explores the codebase to understand what needs to change
@@ -43,7 +43,7 @@ Run `/engage-blueprint PROJ-123` on a ticket in "To Do" status. The skill:
 
 ### Phase 2 — Review
 
-Run `/engage-blueprint PROJ-123` again after reviewers leave feedback. The skill:
+Run `/atlassian-blueprint PROJ-123` again after reviewers leave feedback. The skill:
 
 1. Reads comments from both Jira and Confluence
 2. Proposes updates based on the feedback
@@ -51,7 +51,7 @@ Run `/engage-blueprint PROJ-123` again after reviewers leave feedback. The skill
 
 ### Phase 3 — Implement
 
-Run `/engage-blueprint PROJ-123 implement` once the ticket is approved. The skill:
+Run `/atlassian-blueprint PROJ-123 implement` once the ticket is approved. The skill:
 
 1. Verifies the ticket has been approved in Jira
 2. Checks for any unaddressed feedback

@@ -3,9 +3,9 @@ description: "Plan and implement Jira tickets via plan-first workflow"
 allowed-tools: "Bash, Read, Write, Edit, Glob, Grep, WebFetch, mcp__claude_ai_Atlassian__getAccessibleAtlassianResources, mcp__claude_ai_Atlassian__getJiraIssue, mcp__claude_ai_Atlassian__searchJiraIssuesUsingJql, mcp__claude_ai_Atlassian__getTransitionsForJiraIssue, mcp__claude_ai_Atlassian__transitionJiraIssue, mcp__claude_ai_Atlassian__addCommentToJiraIssue, mcp__claude_ai_Atlassian__createConfluencePage, mcp__claude_ai_Atlassian__updateConfluencePage, mcp__claude_ai_Atlassian__getConfluencePage, mcp__claude_ai_Atlassian__getConfluencePageFooterComments, mcp__claude_ai_Atlassian__createConfluenceFooterComment, mcp__claude_ai_Atlassian__getConfluenceSpaces, mcp__claude_ai_Atlassian__atlassianUserInfo"
 ---
 
-# /engage-blueprint
+# /atlassian-blueprint
 
-You are executing the `engage-blueprint` skill. This command bridges Jira tickets to implementation via a plan-first workflow using Confluence for plan review and Jira for workflow management.
+You are executing the `atlassian-blueprint` skill. This command bridges Jira tickets to implementation via a plan-first workflow using Confluence for plan review and Jira for workflow management.
 
 **Important**: The user may not be a developer. All communication must use plain, non-technical language. Never use git terminology (commit, push, stash, checkout, branch, merge, rebase, pull) in messages to the user unless they explicitly ask for technical details. Execute git commands silently and only surface results or errors in friendly language.
 
@@ -37,7 +37,7 @@ Only proceed if all checks pass.
      - **Status is "To Do", "Open", "Backlog", or similar early-stage status** → proceed with **Phase 1: Plan Creation**
      - **Status is "In Review", "Planning", "In Progress" (and `implement` was NOT passed)** → proceed with **Phase 2: Review & Adjust**
      - **Status is "Approved", "Ready for Dev", "Selected for Development", or similar approved status** AND `implement` was passed → proceed with **Phase 3: Implement**
-     - **Status is an approved status** but `implement` was NOT passed → tell the user: "This ticket is approved and ready to build. Run `/engage-blueprint <JIRA_KEY> implement` to start implementation."
+     - **Status is an approved status** but `implement` was NOT passed → tell the user: "This ticket is approved and ready to build. Run `/atlassian-blueprint <JIRA_KEY> implement` to start implementation."
      - **If the status doesn't clearly match any phase** → tell the user the current status and ask which phase they'd like to run
 
-Now load and follow the full instructions in `skills/engage-blueprint/SKILL.md` for the detected phase.
+Now load and follow the full instructions in `skills/atlassian-blueprint/SKILL.md` for the detected phase.
